@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Picktakers Awards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: gala entre amigos, festiva pero cuidada
+   IDEA: el programa de mano de una gala de premios
+   PICTURE: estatuilla dorada bajo los focos + el tablero de votación vivo
+   COLOUR and TYPE: terciopelo burdeos casi negro, rojo alfombra, oro; DM Serif Display + Outfit
+   LAYOUT: cabecera breve con cuenta atrás, pasos de fase, tablero de la fase activa */
+:root{color-scheme:dark;--bg:#170810;--panel:#22101a;--panel2:#2c1421;--line:#43202d;--red:#a3182f;--gold:#f2c14e;--gold2:#c08f2c;--ink:#fbefe7;--mute:#c8a7b0}
+:root[data-theme=light],:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Outfit,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(24px,4vw,56px) max(5vw,16px)}
+.wrap{max-width:1180px;margin:0 auto}
+.hero{background:radial-gradient(110% 100% at 85% 0%,#5e1124 0%,transparent 62%),linear-gradient(180deg,#2a0b16,var(--bg));border-bottom:1px solid var(--line);overflow:hidden;padding-bottom:20px}
+.hero-in{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:24px;align-items:center}
+.kicker{color:var(--gold);font-weight:600;font-size:15px;margin:0 0 8px}
+h1{font:400 clamp(42px,7vw,76px)/1 'DM Serif Display',Georgia,serif;margin:0;text-wrap:balance}
+h1 em{font-style:italic}
+.count{font-size:clamp(17px,2.2vw,21px);font-weight:600;color:var(--gold);margin:16px 0 0;font-variant-numeric:tabular-nums;min-height:1.5em}
+.trophy{width:100%;height:auto;display:block}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;padding-top:18px;padding-bottom:0}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:left;color:var(--ink);min-height:64px;cursor:pointer;display:flex;flex-direction:column;gap:2px;font:inherit}
+.step.live{border-color:var(--gold2)}
+.step.sel{background:var(--red);border-color:var(--red)}
+.st{font-weight:600}.ss{font-size:13px;color:var(--mute)}.step.sel .ss{color:#ffd9de}
+#note{padding:0 max(5vw,16px)}#note:empty{display:none}
+#note div{max-width:1180px;margin:14px auto 0;background:#3a1420;border:1px solid var(--red);border-radius:12px;padding:12px 14px}
+main{padding-top:24px}
+h2{font:400 clamp(30px,4vw,40px)/1.05 'DM Serif Display',serif;margin:0}
+.sub{color:var(--mute);max-width:68ch;margin:8px 0 0}
+.h3{font:400 24px 'DM Serif Display',serif;margin:28px 0 8px}
+.add{display:flex;gap:8px;margin:18px 0}.add.sm{margin:12px 0 0}
+input,select{flex:1;font:inherit;font-size:16px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#12060c;color:var(--ink);min-height:46px;width:100%}
+input::placeholder{color:#8f6f78}
+.btn{font:inherit;font-weight:600;border-radius:10px;padding:0 18px;min-height:46px;background:var(--panel2);color:var(--ink);cursor:pointer;border:1px solid var(--line);white-space:nowrap}
+.btn.gold{background:var(--gold);color:#2a1206;border-color:var(--gold)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.meta{color:var(--mute);font-size:14px;margin:6px 0}
+.themes{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}
+.theme{display:flex;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.theme.chosen{border-color:var(--gold2);background:linear-gradient(90deg,#3b1b12,var(--panel) 70%)}
+.tbody{flex:1}.ttext{font-weight:600;font-size:17px}.tby{font-size:13px;color:var(--mute)}
+.bar{height:5px;background:#3a1622;border-radius:4px;margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--gold);border-radius:4px;transition:width .4s}
+.tact{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.vote{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:68px;min-height:56px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;cursor:pointer}
+.vote b{font-size:20px;line-height:1}.vote span{font-size:12px;color:var(--mute)}
+.vote.on{background:var(--gold);color:#2a1206;border-color:var(--gold)}.vote.on span{color:#5a3608}
+.vote:disabled,.card:disabled{cursor:default}
+.link{background:none;border:0;color:var(--mute);font:inherit;font-size:14px;cursor:pointer;padding:8px 6px;min-height:40px;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center}
+.link:disabled{opacity:.4;cursor:default}
+.gold-t{color:var(--gold)}
+.badge{display:inline-block;font-size:12px;font-weight:700;background:var(--gold);color:#2a1206;border-radius:99px;padding:1px 9px;vertical-align:middle;margin-left:4px}
+.empty{border:1px dashed var(--line);border-radius:14px;padding:28px;text-align:center;color:var(--mute);margin-top:12px}
+.warn{background:#3a1420;border:1px solid var(--red);border-radius:12px;padding:12px 14px;margin:14px 0}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:14px;margin-top:18px}
+.cats.wide{grid-template-columns:repeat(auto-fill,minmax(min(100%,500px),1fr))}
+.cat{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.cat h3{font:400 25px/1.15 'DM Serif Display',serif;margin:0 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:3px 3px 3px 12px;font-size:15px}
+.chip button{background:none;border:0;color:var(--mute);font-size:20px;width:34px;height:34px;border-radius:50%;cursor:pointer}
+.lbl{display:block;font-size:13px;color:var(--gold);font-weight:600;margin:14px 0 6px}
+.tally{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.tally li{display:grid;grid-template-columns:minmax(0,1fr) 90px 28px auto;align-items:center;gap:10px;font-size:15px;min-height:32px}
+.tally .bar{margin:0}.tally b{text-align:right;font-variant-numeric:tabular-nums}.tally li.top span{font-weight:600}
+.noms{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));gap:8px}
+.nom{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--panel2);border-radius:12px;padding:8px 10px}
+.ph{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none}
+.ini{display:grid;place-items:center;background:var(--red);color:#fff;font-weight:700;letter-spacing:.02em}
+.nn{font-weight:600;flex:1}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px 12px;border-radius:14px;border:2px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;cursor:pointer;text-align:center}
+.card .big{width:100%;aspect-ratio:1;height:auto;border-radius:10px;object-fit:cover;font-size:30px}
+.card.on{border-color:var(--gold);box-shadow:0 0 0 3px rgba(242,193,78,.25)}
+.card.win{background:linear-gradient(180deg,#4d3210,var(--panel2));border-color:var(--gold)}
+.mine{font-size:12px;font-weight:700;color:#2a1206;background:var(--gold);border-radius:99px;padding:1px 9px}
+.cnt{font-size:13px;color:var(--mute)}
+.sealed{display:grid;place-items:center;min-height:130px;border-radius:12px;background:repeating-linear-gradient(135deg,#2b1221 0 12px,#241019 12px 24px);color:var(--mute);font:italic 400 24px 'DM Serif Display',serif}
+.winner{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.winner .huge{width:128px;height:128px;border-radius:16px;object-fit:cover;font-size:38px;border:3px solid var(--gold)}
+.winner strong{display:block;font:400 clamp(28px,4vw,38px)/1.05 'DM Serif Display',serif;color:var(--gold)}
+.env.open{border-color:var(--gold2);background:linear-gradient(160deg,#3a1d12,var(--panel) 60%)}
+.admin{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:14px;align-items:end;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:18px}
+.admin label{display:grid;gap:6px;font-size:14px;color:var(--mute)}
+.adm-cats{padding-left:22px;margin:0}
+.adm-cats li{padding:4px 0;border-bottom:1px solid var(--line)}
+.adm-cats .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.adm-cats .row>span:first-child{flex:1;font-weight:600}
+#toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,160%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;transition:transform .25s;z-index:9;max-width:90vw}
+#toast.show{transform:translate(-50%,0)}
+.login{max-width:520px;margin:20px auto;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:32px 22px}.login .btn{margin-top:14px}.who{display:flex;align-items:center;gap:8px;justify-content:flex-end;font-size:14px;color:var(--mute);margin-top:12px}.who img{width:28px;height:28px;border-radius:50%}
+footer{color:var(--mute);font-size:13px;text-align:center}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+@media(max-width:600px){.hero-in{grid-template-columns:minmax(0,1fr) 92px;gap:12px}.theme{flex-wrap:wrap}.tact{width:100%;justify-content:space-between}.tally li{grid-template-columns:minmax(0,1fr) 48px 24px auto;gap:6px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.add{flex-wrap:wrap}.add .btn{flex:1}}
+</style></head><body>
+<header class="hero">
+  <div class="band wrap hero-in" style="padding-bottom:0">
+    <div>
+      <p class="kicker">Edición 2026 · entre amigos</p>
+      <h1>Picktakers <em>Awards</em></h1>
+      <p class="count" id="count" aria-live="polite"></p><div class="who" id="who"></div>
+    </div>
+    <svg class="trophy" viewBox="0 0 260 300" aria-hidden="true">
+      <defs>
+        <linearGradient id="gd" x1="0" x2="1"><stop offset="0" stop-color="#7a4c0e"/><stop offset=".42" stop-color="#ffe39a"/><stop offset=".58" stop-color="#f2c14e"/><stop offset="1" stop-color="#6e430c"/></linearGradient>
+        <linearGradient id="bm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c2" stop-opacity=".5"/><stop offset="1" stop-color="#fff1c2" stop-opacity="0"/></linearGradient>
+      </defs>
+      <polygon points="30,0 70,0 175,300 55,300" fill="url(#bm)" opacity=".55"/>
+      <polygon points="195,0 235,0 215,300 95,300" fill="url(#bm)" opacity=".4"/>
+      <ellipse cx="130" cy="286" rx="84" ry="10" fill="#000" opacity=".5"/>
+      <rect x="84" y="240" width="92" height="44" rx="3" fill="#2a0f18"/><rect x="84" y="240" width="92" height="6" fill="#55202f"/>
+      <rect x="100" y="224" width="60" height="18" rx="2" fill="url(#gd)"/>
+      <path d="M118 224 L121 152 Q111 140 113 120 L119 101 Q130 94 141 101 L147 120 Q149 140 139 152 L142 224 Z" fill="url(#gd)"/>
+      <circle cx="130" cy="85" r="13" fill="url(#gd)"/>
+      <path d="M120 106 Q104 84 120 52 M140 106 Q156 84 140 52" stroke="url(#gd)" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <polygon points="130,16 134.4,29.9 147.1,30.4 137.1,38.3 140.6,50.6 130,43.5 119.4,50.6 122.9,38.3 112.9,30.4 125.6,29.9" fill="url(#gd)"/>
+    </svg>
+  </div>
+  <nav class="band wrap steps" id="steps" aria-label="Fases"></nav>
+</header>
+<div id="note"></div>
+<main class="band wrap" id="view"></main>
+<footer class="band">Picktakers Awards · el organizador tiene la última palabra</footer>
+<div id="toast" role="status"></div>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,doc,setDoc,onSnapshot,collection} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+const FBCFG={apiKey:"AIzaSyA8IwIs9-ThGn02JNDAWi2_lkQcUKfqAQs",authDomain:"picktakers-awards.firebaseapp.com",projectId:"picktakers-awards",storageBucket:"picktakers-awards.firebasestorage.app",messagingSenderId:"830948591014",appId:"1:830948591014:web:8a71ac323798012668fb67"};
+const ADMIN_EMAIL="carlosrojasserrano06@gmail.com";
+{
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const PH=[{n:1,t:'Temáticas'},{n:2,t:'Nominados'},{n:3,t:'Votación final'},{n:4,t:'Gala'}];
+let fs=null,auth=null,me=null,owner=false,canWrite=false,tab=null,authUser=null;
+let cfg={phase:1,ends:{},cats:[],maxNoms:4},props={},ballots={};
+const chains={};let users={},photos={};
+const rid=()=>Math.random().toString(36).slice(2,10);
+const norm=s=>String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').trim().toLowerCase().replace(/\s+/g,' ');
+const initials=n=>String(n).trim().split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+const endOf=p=>cfg.ends&&cfg.ends[p]?Date.parse(cfg.ends[p]):null;
+const isOpen=p=>cfg.phase===p&&(!endOf(p)||Date.now()<endOf(p));
+const maxN=()=>cfg.maxNoms||4;
+const fmtD=new Intl.DateTimeFormat('es-ES',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+const nameOf=id=>id===me?'ti':((users[id]&&users[id].name)||'Alguien');
+const put=(path,data)=>setDoc(doc(fs,path),data);
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),2600)}
+function note(t){$('#note').innerHTML=t?`<div>${esc(t)}</div>`:''}
+function allThemes(){const o=[];for(const [uid,d] of Object.entries(props))for(const it of (d.items||[]))o.push({...it,by:uid});return o}
+function themeVotes(tid){let c=0;for(const b of Object.values(ballots))if(b.themes&&b.themes[tid])c++;return c}
+function nomTally(cid){const m={};for(const b of Object.values(ballots))for(const n of (b.noms&&b.noms[cid]||[])){const k=norm(n);if(!k)continue;(m[k]||(m[k]={name:n,count:0})).count++}return Object.values(m).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name))}
+function pickTally(cid){const m={};for(const b of Object.values(ballots)){const p=b.picks&&b.picks[cid];if(p)m[p]=(m[p]||0)+1}return m}
+const myB=()=>{const b=JSON.parse(JSON.stringify(ballots[me]||{}));b.themes=b.themes||{};b.noms=b.noms||{};b.picks=b.picks||{};return b};
+function errText(e){const c=e&&e.code;if(c==='permission-denied')return'No tienes permiso para hacer eso.';if(c==='resource-exhausted')return'Se ha superado el límite gratuito de hoy.';return'No se pudo guardar. Inténtalo otra vez.'}
+function queue(path,fn){const p=(chains[path]||Promise.resolve()).then(fn);chains[path]=p.catch(()=>{});return p.catch(e=>toast(errText(e)))}
+function saveBallot(mut){if(!me)return;const b=myB();mut(b);ballots[me]=b;render();return queue('ballots/'+me,()=>put('ballots/'+me,b))}
+function saveCfg(mut){const c=JSON.parse(JSON.stringify(cfg));c.cats=c.cats||[];mut(c);cfg=c;render();return queue('admin/state',()=>put('admin/state',c))}
+function saveProps(uid,items){props[uid]={items};render();return queue('proposals/'+uid,()=>put('proposals/'+uid,{items}))}
+function photo(n,cls){const d=n.photo&&photos[n.photo];return d&&/^data:image\/(jpeg|png|webp);base64,/.test(d)?`<img class="${cls}" src="${esc(d)}" alt="">`:`<span class="${cls} ini">${esc(initials(n.name))}</span>`}
+function closedMsg(p){if(cfg.phase<p)return'Esta fase aún no ha empezado (vista previa del organizador).';if(cfg.phase>p)return'Fase cerrada. Así quedó.';return'Se acabó el plazo. El organizador pasará a la siguiente fase en breve.'}
+const noWrite=()=>`<div class="warn">Inicia sesión con Google para participar.</div>`;
+const locked=p=>`<section><h2>${PH[p-1].t}</h2><div class="empty">Esta fase aún no ha empezado. ${p===2?'Primero cerramos las temáticas.':p===3?'Primero elegimos a los nominados.':'Los ganadores se revelan en la gala.'}</div></section>`;
+
+function v1(){
+  const open=isOpen(1),mine=myB().themes,chosen=new Set(cfg.cats.map(c=>c.id));
+  const th=allThemes().map(t=>({...t,votes:themeVotes(t.id)})).sort((a,b)=>b.votes-a.votes||a.at-b.at);
+  const voters=Object.values(ballots).filter(b=>b.themes&&Object.keys(b.themes).length).length;
+  let h=`<section><h2>Temáticas</h2><p class="sub">${open?'Propón categorías para los premios y vota todas las que quieras que salgan. La lista final la cierra el organizador siguiendo a la mayoría.':closedMsg(1)}</p>`;
+  if(open&&canWrite)h+=`<form class="add" data-form="theme"><input id="newTheme" maxlength="80" placeholder="Ej.: El que siempre llega tarde" autocomplete="off" required><button class="btn gold">Proponer</button></form>`;
+  else if(open)h+=noWrite();
+  h+=`<p class="meta">${th.length} propuestas · ${voters} ${voters===1?'persona ha':'personas han'} votado · ${cfg.cats.length} elegidas</p>`;
+  if(!th.length)return h+`<div class="empty">Todavía no hay temáticas. ¡Estrena tú la lista!</div></section>`;
+  const mx=Math.max(1,...th.map(t=>t.votes));
+  return h+'<ol class="themes">'+th.map(t=>{const on=!!mine[t.id],ch=chosen.has(t.id);return `<li class="theme${ch?' chosen':''}"><div class="tbody"><div class="ttext">${esc(t.text)}${ch?'<span class="badge">Elegida</span>':''}</div><div class="tby">Propuesta por ${esc(nameOf(t.by))}</div><div class="bar"><i style="width:${t.votes/mx*100}%"></i></div></div><div class="tact">${owner?`<button class="link gold-t" data-act="pick" data-id="${esc(t.id)}">${ch?'Descartar':'Elegir'}</button>`:''}${(t.by===me&&open)||owner?`<button class="link" data-act="delt" data-id="${esc(t.id)}" data-by="${esc(t.by)}">Quitar</button>`:''}<button class="vote${on?' on':''}" data-act="vt" data-id="${esc(t.id)}" ${open&&canWrite?'':'disabled'} aria-pressed="${on}"><b>${t.votes}</b><span>${on?'Votada':'Votar'}</span></button></div></li>`}).join('')+'</ol></section>';
+}
+function nomineesBlock(c){
+  const off=c.nominees||[];
+  let h=`<span class="lbl">Nominados oficiales · ${off.length}/${maxN()}</span>`;
+  if(off.length)h+='<div class="noms">'+off.map(n=>`<div class="nom">${photo(n,'ph')}<span class="nn">${esc(n.name)}</span>${owner?`<label class="link">Foto<input type="file" accept="image/*" hidden data-act="photo" data-c="${esc(c.id)}" data-id="${esc(n.id)}"></label><button class="link" data-act="rmnominee" data-c="${esc(c.id)}" data-id="${esc(n.id)}">Quitar</button>`:''}</div>`).join('')+'</div>';
+  if(owner&&off.length<maxN())h+=`<form class="add sm" data-form="nominee" data-c="${esc(c.id)}"><input id="nominee-${esc(c.id)}" maxlength="40" placeholder="Nominar a mano" autocomplete="off" required><button class="btn">Nominar</button></form>`;
+  return h;
+}
+function v2(){
+  if(cfg.phase<2&&!owner)return locked(2);
+  const open=isOpen(2),b=myB(),mx=maxN();
+  let h=`<section><h2>Nominados</h2><p class="sub">${open?`Escribe hasta ${mx} nominados por categoría. Los ${mx} más repetidos pasan a la votación final.`:closedMsg(2)}</p>`;
+  if(open&&!canWrite)h+=noWrite();
+  if(!cfg.cats.length)return h+`<div class="empty">Aún no hay categorías elegidas.</div></section>`;
+  const sg=new Set();for(const x of Object.values(ballots))for(const a of Object.values(x.noms||{}))for(const n of a)sg.add(n);
+  h+=`<datalist id="sugg">${[...sg].map(n=>`<option value="${esc(n)}">`).join('')}</datalist><div class="cats">`;
+  for(const c of cfg.cats){
+    const mine=b.noms[c.id]||[],tl=nomTally(c.id),off=c.nominees||[];
+    h+=`<article class="cat"><h3>${esc(c.name)}</h3>`;
+    if(open&&canWrite){
+      h+=`<div class="chips">${mine.map((n,i)=>`<span class="chip">${esc(n)}<button data-act="rmnom" data-c="${esc(c.id)}" data-i="${i}" aria-label="Quitar ${esc(n)}">×</button></span>`).join('')}</div>`;
+      h+=mine.length<mx?`<form class="add sm" data-form="nom" data-c="${esc(c.id)}"><input id="nom-${esc(c.id)}" list="sugg" maxlength="40" placeholder="Nombre del nominado" autocomplete="off" required><button class="btn">Añadir</button></form>`:`<p class="meta">Ya tienes tus ${mx} nominados.</p>`;
+    }
+    if(tl.length){const top=tl[0].count;h+=`<span class="lbl">Recuento del grupo</span><ul class="tally">${tl.slice(0,8).map((t,i)=>{const isOff=off.some(o=>norm(o.name)===norm(t.name));return `<li class="${i<mx?'top':''}"><span>${esc(t.name)}${isOff?'<span class="badge">Nominado</span>':''}</span><div class="bar"><i style="width:${t.count/top*100}%"></i></div><b>${t.count}</b>${owner&&!isOff&&off.length<mx?`<button class="link gold-t" data-act="addnominee" data-c="${esc(c.id)}" data-n="${esc(t.name)}">Nominar</button>`:'<span></span>'}</li>`}).join('')}</ul>`}
+    else h+='<p class="meta">Sin nominaciones todavía.</p>';
+    if(off.length||owner)h+=nomineesBlock(c);
+    h+='</article>';
+  }
+  return h+'</div></section>';
+}
+function v3(){
+  if(cfg.phase<3&&!owner)return locked(3);
+  const open=isOpen(3),b=myB(),cats=cfg.cats.filter(c=>(c.nominees||[]).length);
+  let h=`<section><h2>Votación final</h2><p class="sub">${open?'Elige un ganador por categoría. Puedes cambiar tu voto hasta que cierre el plazo. Los resultados se guardan hasta la gala.':closedMsg(3)}</p>`;
+  if(open&&!canWrite)h+=noWrite();
+  if(!cats.length)return h+`<div class="empty">Los nominados aún no están listos.</div></section>`;
+  h+='<div class="cats wide">';
+  for(const c of cats){
+    const pick=b.picks[c.id],t=pickTally(c.id),tot=Object.values(t).reduce((a,x)=>a+x,0);
+    h+=`<article class="cat"><h3>${esc(c.name)}</h3><div class="cards">`+c.nominees.map(n=>{const on=pick===n.id,win=c.revealed&&c.winner===n.id;return `<button class="card${on?' on':''}${win?' win':''}" data-act="pk" data-c="${esc(c.id)}" data-id="${esc(n.id)}" ${open&&canWrite?'':'disabled'} aria-pressed="${on}">${photo(n,'big')}<span class="nn">${esc(n.name)}</span>${on?'<span class="mine">Tu voto</span>':''}${owner||c.revealed?`<span class="cnt">${t[n.id]||0} votos</span>`:''}</button>`}).join('')+'</div>';
+    if(owner)h+=`<p class="meta">${tot} votos emitidos. El recuento solo aparece en tu vista de organizador hasta que lo reveles en la gala.</p>`;
+    h+='</article>';
+  }
+  return h+'</div></section>';
+}
+function v4(){
+  const cats=cfg.cats.filter(c=>(c.nominees||[]).length);
+  let h=`<section><h2>La gala</h2><p class="sub">${cfg.phase<4?'Los sobres se abren al final.':'Y el Picktaker es para…'}${owner?' Pulsa «Coronar» para abrir cada sobre.':''}</p>`;
+  if(!cats.length)return h+'<div class="empty">Todavía no hay finalistas.</div></section>';
+  h+='<div class="cats wide">';
+  for(const c of cats){
+    const t=pickTally(c.id),w=c.revealed&&c.nominees.find(n=>n.id===c.winner);
+    h+=`<article class="cat env${w?' open':''}"><h3>${esc(c.name)}</h3>`;
+    h+=w?`<div class="winner">${photo(w,'huge')}<div><span class="lbl">Ganador</span><strong>${esc(w.name)}</strong><span class="meta">${t[w.id]||0} votos</span></div></div>`:'<div class="sealed">Sobre cerrado</div>';
+    if(owner){const s=[...c.nominees].sort((a,b)=>(t[b.id]||0)-(t[a.id]||0));h+=`<span class="lbl">Recuento (solo tú)</span><ul class="tally">${s.map(n=>`<li><span>${esc(n.name)}</span><span></span><b>${t[n.id]||0}</b><button class="link gold-t" data-act="crown" data-c="${esc(c.id)}" data-id="${esc(n.id)}">${c.revealed&&c.winner===n.id?'Ocultar':'Coronar'}</button></li>`).join('')}</ul>`}
+    h+='</article>';
+  }
+  return h+'</div></section>';
+}
+function vAdmin(){
+  const loc=iso=>{if(!iso)return'';const d=new Date(iso),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`};
+  return `<section><h2>Panel del organizador</h2><p class="sub">Solo tú ves esto. Tú decides cuándo cambia la fase y qué temáticas salen. Las temáticas se eligen con «Elegir» en la pestaña Temáticas, los nominados con «Nominar» y los ganadores con «Coronar» en la Gala.</p>
+  <form class="admin" data-form="cfg"><label>Fase activa<select id="a-phase">${PH.map(p=>`<option value="${p.n}" ${cfg.phase===p.n?'selected':''}>${p.t}</option>`).join('')}</select></label>
+  ${PH.slice(0,3).map(p=>`<label>Cierre de «${p.t}»<input type="datetime-local" id="a-end${p.n}" value="${loc(cfg.ends&&cfg.ends[p.n])}"></label>`).join('')}
+  <label>Nominados por categoría<input type="number" id="a-max" min="2" max="8" value="${maxN()}"></label>
+  <button class="btn gold">Guardar cambios</button></form>
+  <h3 class="h3">Categorías elegidas (${cfg.cats.length})</h3>
+  <ol class="adm-cats">${cfg.cats.map((c,i)=>`<li><div class="row"><span>${esc(c.name)}</span><span class="meta">${(c.nominees||[]).length} nominados</span><button class="link" data-act="up" data-i="${i}" ${i?'':'disabled'}>Subir</button><button class="link" data-act="rmcat" data-i="${i}">Quitar</button></div></li>`).join('')||'<li class="meta">Elige temáticas desde la pestaña Temáticas.</li>'}</ol>
+  <form class="add sm" data-form="cat"><input id="a-newcat" maxlength="80" placeholder="Añadir una categoría a mano" autocomplete="off" required><button class="btn">Añadir</button></form>
+  <p class="meta" style="margin-top:20px">Para que tus amigos voten, pásales el enlace de esta página: entran con su cuenta de Google.</p></section>`;
+}
+function vLogin(){return `<section class="login"><h2>Bienvenido a la gala</h2><p class="sub" style="margin:10px auto 0">Entra con tu cuenta de Google para proponer temáticas, nominar y votar. Tu nombre aparecerá junto a lo que propongas.</p><button class="btn gold" id="login">Entrar con Google</button></section>`}
+function renderWho(){const w=$('#who');if(!authUser){w.textContent='';return}w.innerHTML=`<span>${esc(authUser.displayName||authUser.email||'')}${owner?' · organizador':''}</span><button class="link" id="logout">Salir</button>`}
+function stepStatus(p){if(p===4)return cfg.phase===4?'En directo':'Final';if(cfg.phase>p)return'Cerrada';if(cfg.phase<p)return'Próximamente';const e=endOf(p);if(e&&Date.now()>=e)return'Plazo terminado';return e?'Cierra '+fmtD.format(e):'Abierta'}
+function render(){
+  const t=tab??cfg.phase;
+  $('#steps').innerHTML=PH.map(p=>`<button class="step${t===p.n?' sel':''}${cfg.phase===p.n?' live':''}" data-tab="${p.n}" aria-current="${t===p.n}"><span class="st">${p.t}</span><span class="ss">${esc(stepStatus(p.n))}</span></button>`).join('')+(owner?`<button class="step${t==='admin'?' sel':''}" data-tab="admin"><span class="st">Organizador</span><span class="ss">Solo tú</span></button>`:'');
+  const keep={},f=document.activeElement&&document.activeElement.id;
+  document.querySelectorAll('#view input[id]').forEach(i=>{if(i.type!=='file')keep[i.id]=i.value});
+  $('#view').innerHTML=!me?vLogin():t==='admin'?vAdmin():t===1?v1():t===2?v2():t===3?v3():v4();
+  for(const [id,v] of Object.entries(keep)){const i=document.getElementById(id);if(i&&v)i.value=v}
+  if(f){const i=document.getElementById(f);if(i&&i.closest('#view'))i.focus()}
+  tick();
+  renderWho();
+}
+function tick(){
+  const p=cfg.phase,e=endOf(p),el=$('#count');
+  if(p>3){el.textContent='Noche de gala';return}
+  if(!e){el.textContent=`Fase abierta: ${PH[p-1].t}`;return}
+  const ms=e-Date.now();
+  if(ms<=0){el.textContent=`Se acabó el plazo de «${PH[p-1].t}»`;if(tick.done!==p){tick.done=p;render()}return}
+  tick.done=0;const d=Math.floor(ms/864e5),h=Math.floor(ms/36e5)%24,m=Math.floor(ms/6e4)%60,s=Math.floor(ms/1e3)%60;
+  el.textContent=`${PH[p-1].t}: quedan ${d?d+'d ':''}${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+}
+function addNominee(c,name){saveCfg(x=>{const k=x.cats.find(k=>k.id===c);if(!k)return;k.nominees=k.nominees||[];if(k.nominees.length<(x.maxNoms||4)&&!k.nominees.some(n=>norm(n.name)===norm(name)))k.nominees.push({id:rid(),name,photo:null})})}
+async function toData(f){const bm=await createImageBitmap(f),s=Math.min(1,560/Math.max(bm.width,bm.height)),cv=document.createElement('canvas');cv.width=Math.round(bm.width*s);cv.height=Math.round(bm.height*s);cv.getContext('2d').drawImage(bm,0,0,cv.width,cv.height);return cv.toDataURL('image/jpeg',.82)}
+
+$('#steps').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;tab=b.dataset.tab==='admin'?'admin':+b.dataset.tab;render()});
+$('#view').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b||b.tagName==='INPUT'||b.disabled)return;
+  const a=b.dataset.act,id=b.dataset.id,c=b.dataset.c;
+  if(a==='vt')saveBallot(x=>{if(x.themes[id])delete x.themes[id];else x.themes[id]=true});
+  else if(a==='delt'){const by=b.dataset.by;saveProps(by,(props[by]&&props[by].items||[]).filter(t=>t.id!==id))}
+  else if(a==='pick'){const t=allThemes().find(t=>t.id===id);saveCfg(x=>{const i=x.cats.findIndex(k=>k.id===id);if(i>=0)x.cats.splice(i,1);else if(t)x.cats.push({id,name:t.text,nominees:[],winner:null,revealed:false})})}
+  else if(a==='rmnom')saveBallot(x=>{(x.noms[c]=x.noms[c]||[]).splice(+b.dataset.i,1)});
+  else if(a==='addnominee')addNominee(c,b.dataset.n);
+  else if(a==='rmnominee')saveCfg(x=>{const k=x.cats.find(k=>k.id===c);if(!k)return;k.nominees=k.nominees.filter(n=>n.id!==id);if(k.winner===id){k.winner=null;k.revealed=false}});
+  else if(a==='pk')saveBallot(x=>{x.picks[c]=id});
+  else if(a==='crown')saveCfg(x=>{const k=x.cats.find(k=>k.id===c);if(!k)return;if(k.revealed&&k.winner===id)k.revealed=false;else{k.winner=id;k.revealed=true}});
+  else if(a==='up')saveCfg(x=>{const i=+b.dataset.i;if(i>0)[x.cats[i-1],x.cats[i]]=[x.cats[i],x.cats[i-1]]});
+  else if(a==='rmcat')saveCfg(x=>{x.cats.splice(+b.dataset.i,1)});
+});
+$('#view').addEventListener('submit',e=>{
+  e.preventDefault();const f=e.target,k=f.dataset.form,c=f.dataset.c,inp=f.querySelector('input'),val=inp?inp.value.trim():'';
+  if(k==='theme'){if(!val||!isOpen(1)||!me)return;inp.value='';saveProps(me,[...(props[me]&&props[me].items||[]),{id:rid(),text:val,at:Date.now()}])}
+  else if(k==='nom'){if(!val)return;inp.value='';saveBallot(x=>{const a=x.noms[c]=x.noms[c]||[];if(a.length<maxN()&&!a.some(n=>norm(n)===norm(val)))a.push(val)})}
+  else if(k==='nominee'){if(!val)return;inp.value='';addNominee(c,val)}
+  else if(k==='cat'){if(!val)return;inp.value='';saveCfg(x=>x.cats.push({id:rid(),name:val,nominees:[],winner:null,revealed:false}))}
+  else if(k==='cfg'){const ends={};for(const p of [1,2,3]){const v=$('#a-end'+p).value;ends[p]=v?new Date(v).toISOString():null}const ph=+$('#a-phase').value,mx=Math.max(2,Math.min(8,+$('#a-max').value||4));saveCfg(x=>{x.phase=ph;x.ends=ends;x.maxNoms=mx});toast('Cambios guardados')}
+});
+$('#view').addEventListener('change',async e=>{
+  const i=e.target;if(i.dataset.act!=='photo'||!i.files||!i.files[0]||!owner)return;
+  toast('Subiendo foto…');
+  try{const d=await toData(i.files[0]);if(d.length>700000){toast('La foto es demasiado grande.');return}const pid=rid();await put('photos/'+pid,{d});saveCfg(x=>{const k=x.cats.find(k=>k.id===i.dataset.c),n=k&&k.nominees.find(n=>n.id===i.dataset.id);if(n)n.photo=pid});toast('Foto lista')}
+  catch(err){toast(err&&err.code==='permission-denied'?'Solo el organizador puede subir fotos.':'No se pudo subir la foto.')}
+});
+setInterval(tick,1000);
+render();
+document.addEventListener('click',async e=>{
+  if(e.target.closest('#login')){const p=new GoogleAuthProvider();try{await signInWithPopup(auth,p)}catch(err){if(err&&(err.code==='auth/popup-blocked'||err.code==='auth/operation-not-supported-in-this-environment'))signInWithRedirect(auth,p);else if(err&&err.code!=='auth/popup-closed-by-user'&&err.code!=='auth/cancelled-popup-request')toast('No se pudo iniciar sesión.')}}
+  if(e.target.closest('#logout'))signOut(auth);
+});
+let subs=[];
+try{const app=initializeApp(FBCFG);auth=getAuth(app);fs=getFirestore(app)}catch(e){note('Falta la configuración de Firebase.')}
+if(auth)onAuthStateChanged(auth,async u=>{
+  subs.forEach(f=>f());subs=[];authUser=u;me=u?u.uid:null;canWrite=!!u;
+  owner=!!(u&&u.email&&u.email.toLowerCase()===ADMIN_EMAIL.toLowerCase());
+  if(!u){if(tab==='admin')tab=null;props={};ballots={};users={};note('');render();return}
+  note('Cargando los premios…');
+  const timer=setTimeout(()=>note('No se puede conectar con los datos todavía. Revisa tu conexión.'),10000);
+  const fail=e=>{clearTimeout(timer);note(e&&e.code==='permission-denied'?'No tienes acceso a los datos.':'No se pudieron cargar los datos.')};
+  put('users/'+u.uid,{name:String(u.displayName||'Sin nombre').slice(0,60)}).catch(()=>{});
+  subs.push(onSnapshot(doc(fs,'admin/state'),s=>{if(s.exists())cfg={phase:1,ends:{},cats:[],maxNoms:4,...s.data()};else if(owner&&!s.metadata.fromCache)put('admin/state',{phase:1,ends:{1:'2026-11-29T22:59:00.000Z',2:null,3:null},cats:[],maxNoms:4}).catch(()=>{});clearTimeout(timer);note('');render()},fail));
+  subs.push(onSnapshot(collection(fs,'proposals'),s=>{props={};s.forEach(d=>props[d.id]=d.data());render()},()=>{}));
+  subs.push(onSnapshot(collection(fs,'ballots'),s=>{ballots={};s.forEach(d=>ballots[d.id]=d.data());render()},()=>{}));
+  subs.push(onSnapshot(collection(fs,'users'),s=>{users={};s.forEach(d=>users[d.id]=d.data());render()},()=>{}));
+  subs.push(onSnapshot(collection(fs,'photos'),s=>{photos={};s.forEach(d=>photos[d.id]=d.data().d);render()},()=>{}));
+});
+}
+</script>
+</body></html>

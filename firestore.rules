@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signed() { return request.auth != null; }
+    function isAdmin() {
+      return signed() && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() == 'carlosrojasserrano06@gmail.com';
+    }
+    // Configuración, categorías, nominados y ganadores: solo el organizador
+    match /admin/{d} { allow read: if signed(); allow write: if isAdmin(); }
+    match /photos/{id} { allow read: if signed(); allow write: if isAdmin(); }
+    // Nombre visible de cada persona
+    match /users/{uid} {
+      allow read: if signed();
+      allow write: if signed() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 60;
+    }
+    // Temáticas propuestas: cada uno las suyas (el organizador puede moderar)
+    match /proposals/{uid} {
+      allow read: if signed();
+      allow write: if (signed() && request.auth.uid == uid) || isAdmin();
+    }
+    // Votos: cada uno solo el suyo
+    match /ballots/{uid} {
+      allow read: if signed();
+      allow write: if signed() && request.auth.uid == uid;
+    }
+  }
+}
