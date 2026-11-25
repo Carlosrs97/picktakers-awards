@@ -128,7 +128,7 @@ footer{color:var(--mute);font-size:13px;text-align:center}
 <div id="toast" role="status"></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,browserLocalPersistence,setPersistence,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {getFirestore,doc,setDoc,onSnapshot,collection} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 const FBCFG={apiKey:"AIzaSyA8IwIs9-ThGn02JNDAWi2_lkQcUKfqAQs",authDomain:"picktakers-awards.firebaseapp.com",projectId:"picktakers-awards",storageBucket:"picktakers-awards.firebasestorage.app",messagingSenderId:"830948591014",appId:"1:830948591014:web:8a71ac323798012668fb67"};
 const ADMIN_EMAIL="carlosrojasserrano06@gmail.com";
@@ -247,7 +247,7 @@ function vAdmin(){
   <form class="add sm" data-form="cat"><input id="a-newcat" maxlength="80" placeholder="Añadir una categoría a mano" autocomplete="off" required><button class="btn">Añadir</button></form>
   <p class="meta" style="margin-top:20px">Para que tus amigos voten, pásales el enlace de esta página: entran con su cuenta de Google.</p></section>`;
 }
-function vLogin(){return `<section class="login"><h2>Bienvenido a la gala</h2><p class="sub" style="margin:10px auto 0">Entra con tu cuenta de Google para proponer temáticas, nominar y votar. Tu nombre aparecerá junto a lo que propongas.</p><button class="btn gold" id="login">Entrar con Google</button></section>`}
+function vLogin(){return `<section class="login"><h2>Bienvenido a la gala</h2><p class="sub" style="margin:10px auto 0">Entra con tu cuenta de Google para proponer temáticas, nominar y votar. Tu nombre aparecerá junto a lo que propongas.</p><p class="meta" style="margin-top:10px">Si lo abriste desde WhatsApp o Instagram, ábrelo en Chrome o Safari: Google no deja iniciar sesión dentro de esas apps.</p><button class="btn gold" id="login">Entrar con Google</button></section>`}
 function renderWho(){const w=$('#who');if(!authUser){w.textContent='';return}w.innerHTML=`<span>${esc(authUser.displayName||authUser.email||'')}${owner?' · organizador':''}</span><button class="link" id="logout">Salir</button>`}
 function stepStatus(p){if(p===4)return cfg.phase===4?'En directo':'Final';if(cfg.phase>p)return'Cerrada';if(cfg.phase<p)return'Próximamente';const e=endOf(p);if(e&&Date.now()>=e)return'Plazo terminado';return e?'Cierra '+fmtD.format(e):'Abierta'}
 function render(){
@@ -305,11 +305,12 @@ $('#view').addEventListener('change',async e=>{
 setInterval(tick,1000);
 render();
 document.addEventListener('click',async e=>{
-  if(e.target.closest('#login')){const p=new GoogleAuthProvider();try{await signInWithPopup(auth,p)}catch(err){if(err&&(err.code==='auth/popup-blocked'||err.code==='auth/operation-not-supported-in-this-environment'))signInWithRedirect(auth,p);else if(err&&err.code!=='auth/popup-closed-by-user'&&err.code!=='auth/cancelled-popup-request')toast('No se pudo iniciar sesión.')}}
+  if(e.target.closest('#login')){const p=new GoogleAuthProvider();try{await signInWithPopup(auth,p)}catch(err){if(err&&(err.code==='auth/popup-blocked'||err.code==='auth/operation-not-supported-in-this-environment'))signInWithRedirect(auth,p);else if(err&&err.code!=='auth/popup-closed-by-user'&&err.code!=='auth/cancelled-popup-request')toast('No se pudo iniciar sesión. Abre el enlace en Chrome o Safari.')}}
   if(e.target.closest('#logout'))signOut(auth);
 });
 let subs=[];
 try{const app=initializeApp(FBCFG);auth=getAuth(app);fs=getFirestore(app)}catch(e){note('Falta la configuración de Firebase.')}
+if(auth){setPersistence(auth,browserLocalPersistence).catch(()=>{});getRedirectResult(auth).catch(()=>{})}
 if(auth)onAuthStateChanged(auth,async u=>{
   subs.forEach(f=>f());subs=[];authUser=u;me=u?u.uid:null;canWrite=!!u;
   owner=!!(u&&u.email&&u.email.toLowerCase()===ADMIN_EMAIL.toLowerCase());
