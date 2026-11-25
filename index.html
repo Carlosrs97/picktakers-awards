@@ -92,6 +92,19 @@ input::placeholder{color:#8f6f78}
 .adm-cats .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.adm-cats .row>span:first-child{flex:1;font-weight:600}
 #toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,160%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;transition:transform .25s;z-index:9;max-width:90vw}
 #toast.show{transform:translate(-50%,0)}
+.people{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pp{font:inherit;font-size:14px;min-height:40px;padding:0 13px;border-radius:99px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer}
+.pp.on{background:var(--gold);color:#2a1206;border-color:var(--gold);font-weight:600}.pp:disabled{opacity:.4;cursor:default}
+.addg{margin-top:10px}.ctag{font-size:13px;color:var(--mute);margin:-6px 0 10px}
+.cards.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+div.card{cursor:default}.card .mm,.mwrap .mm,.winc .mm{width:100%;max-height:340px;border-radius:10px;background:#000;object-fit:contain;display:block}
+.vid{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000}.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.nomedia{display:grid;place-items:center;width:100%;aspect-ratio:16/9;border-radius:10px;background:#1a0a11;color:var(--mute);font-size:14px}
+.vbtn{width:100%;margin-top:4px}.mwrap{flex-basis:100%}.add.full{flex-basis:100%}.mlink{display:inline-flex;align-items:center;text-decoration:none}
+.winc{display:grid;gap:8px}.wname{display:block;font:400 clamp(28px,4vw,38px)/1.05 'DM Serif Display',serif;color:var(--gold)}
+.tsel{width:auto;flex:0 1 auto;min-height:40px;padding:6px 10px;font-size:14px}.szl{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute)}.sz{width:70px;min-height:40px;padding:6px 8px}
+textarea{font:inherit;font-size:16px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#12060c;color:var(--ink);width:100%;resize:vertical}
+@media(max-width:560px){.cards.two{grid-template-columns:minmax(0,1fr)}}
 .login{max-width:520px;margin:20px auto;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:32px 22px}.login .btn{margin-top:14px}.who{display:flex;align-items:center;gap:8px;justify-content:flex-end;font-size:14px;color:var(--mute);margin-top:12px}.who img{width:28px;height:28px;border-radius:50%}
 footer{color:var(--mute);font-size:13px;text-align:center}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -177,29 +190,55 @@ function v1(){
   const mx=Math.max(1,...th.map(t=>t.votes));
   return h+'<ol class="themes">'+th.map(t=>{const on=!!mine[t.id],ch=chosen.has(t.id);return `<li class="theme${ch?' chosen':''}"><div class="tbody"><div class="ttext">${esc(t.text)}${ch?'<span class="badge">Elegida</span>':''}</div><div class="tby">Propuesta por ${esc(nameOf(t.by))}</div><div class="bar"><i style="width:${t.votes/mx*100}%"></i></div></div><div class="tact">${owner?`<button class="link gold-t" data-act="pick" data-id="${esc(t.id)}">${ch?'Descartar':'Elegir'}</button>`:''}${(t.by===me&&open)||owner?`<button class="link" data-act="delt" data-id="${esc(t.id)}" data-by="${esc(t.by)}">Quitar</button>`:''}<button class="vote${on?' on':''}" data-act="vt" data-id="${esc(t.id)}" ${open&&canWrite?'':'disabled'} aria-pressed="${on}"><b>${t.votes}</b><span>${on?'Votada':'Votar'}</span></button></div></li>`}).join('')+'</ol></section>';
 }
+const DEF_MEMBERS=['Tupac','Serpi','Javipro','Ichi','David','Escacena','Alex','Romero','Mora','Mario','Rafaelo','Camino','Coque','Dani','Rey','Hugo','Javisaurus','Jesuli','Julicg','Sanchet','Mi','Nacho','Mili'];
+const members=()=>(cfg.members&&cfg.members.length?cfg.members:DEF_MEMBERS);
+const ctype=c=>c.type||'persona';
+const csize=c=>ctype(c)==='grupo'?Math.max(2,Math.min(6,c.size||2)):1;
+const TYPES={persona:'Una persona',grupo:'Varias personas por nominación',contenido:'Mensaje, vídeo o foto'};
+const draft={};
+function guessType(t){const n=norm(t);if(/mensaje|video|foto|audio|meme|story|historia|momento|frase|tiktok|chat|sticker|cancion/.test(n))return'contenido';if(/tocay|pareja|duo|trio/.test(n))return'grupo';return'persona'}
+function pairKey(arr){const ms=members();return [...arr].sort((a,b)=>ms.indexOf(a)-ms.indexOf(b)).join(' y ')}
+function parsePeople(str){const ms=members(),out=[];const parts=String(str).split(/\s*(?:,|\+|\/|&|\sy\s)\s*/).map(x=>x.trim()).filter(Boolean);for(const p of parts){const m=ms.find(x=>norm(x)===norm(p));if(!m)return null;if(!out.includes(m))out.push(m)}return out}
+const VEXT=/\.(mp4|webm|mov|m4v)(\?.*)?$/i,IEXT=/\.(jpe?g|png|webp|gif)(\?.*)?$/i,FILE_RE=/^[\w\-. ()]+\.(mp4|webm|mov|m4v|jpe?g|png|webp|gif)$/i;
+function validMedia(m){m=String(m||'').trim();return !m||FILE_RE.test(m)||/^https:\/\/\S+$/.test(m)}
+function mediaHtml(m){
+  m=String(m||'').trim();if(!m)return'';
+  const yt=m.match(/^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([\w-]{6,20})/);
+  if(yt)return `<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/${yt[1]}" allowfullscreen loading="lazy" title="Vídeo"></iframe></div>`;
+  let src=null;
+  if(FILE_RE.test(m))src='media/'+encodeURIComponent(m);
+  else if(/^https:\/\/\S+$/.test(m)){if(VEXT.test(m)||IEXT.test(m))src=m;else return `<a class="btn mlink" href="${esc(m)}" target="_blank" rel="noopener">Abrir enlace</a>`}
+  else return'';
+  return VEXT.test(m)?`<video class="mm" src="${esc(src)}" controls playsinline preload="metadata"></video>`:`<img class="mm" src="${esc(src)}" alt="" loading="lazy">`;
+}
 function nomineesBlock(c){
-  const off=c.nominees||[];
+  const off=c.nominees||[],t=ctype(c);
   let h=`<span class="lbl">Nominados oficiales · ${off.length}/${maxN()}</span>`;
-  if(off.length)h+='<div class="noms">'+off.map(n=>`<div class="nom">${photo(n,'ph')}<span class="nn">${esc(n.name)}</span>${owner?`<label class="link">Foto<input type="file" accept="image/*" hidden data-act="photo" data-c="${esc(c.id)}" data-id="${esc(n.id)}"></label><button class="link" data-act="rmnominee" data-c="${esc(c.id)}" data-id="${esc(n.id)}">Quitar</button>`:''}</div>`).join('')+'</div>';
-  if(owner&&off.length<maxN())h+=`<form class="add sm" data-form="nominee" data-c="${esc(c.id)}"><input id="nominee-${esc(c.id)}" maxlength="40" placeholder="Nominar a mano" autocomplete="off" required><button class="btn">Nominar</button></form>`;
+  if(off.length)h+='<div class="noms">'+off.map(n=>`<div class="nom">${t==='contenido'?'':photo(n,'ph')}<span class="nn">${esc(n.name)}</span>${owner?`${t!=='contenido'?`<label class="link">Foto<input type="file" accept="image/*" hidden data-act="photo" data-c="${esc(c.id)}" data-id="${esc(n.id)}"></label>`:''}<button class="link" data-act="rmnominee" data-c="${esc(c.id)}" data-id="${esc(n.id)}">Quitar</button>`:''}${t==='contenido'&&n.media?`<div class="mwrap">${mediaHtml(n.media)}</div>`:''}${owner&&t==='contenido'?`<form class="add sm full" data-form="media" data-c="${esc(c.id)}" data-id="${esc(n.id)}"><input id="media-${esc(n.id)}" maxlength="300" placeholder="Archivo de la carpeta media o enlace" value="${esc(n.media||'')}" autocomplete="off"><button class="btn">Guardar</button></form>`:''}</div>`).join('')+'</div>';
+  if(owner&&off.length<maxN())h+=`<form class="add sm" data-form="nominee" data-c="${esc(c.id)}"><input id="nominee-${esc(c.id)}" ${t==='persona'?'list="members"':''} maxlength="120" placeholder="${t==='persona'?'Nominar a mano (nombre)':t==='grupo'?`Nominar a mano: ${csize(c)} nombres separados por «y»`:'Nominar a mano (descripción)'}" autocomplete="off" required><button class="btn">Nominar</button></form>`;
   return h;
+}
+function nomPicker(c,mine,mx,open){
+  const t=ctype(c),ms=members();
+  if(t==='persona'){const sel=new Set(mine);return `<p class="meta">Toca hasta ${mx} personas (${mine.length}/${mx})</p><div class="people">${ms.map(m=>{const on=sel.has(m);return `<button class="pp${on?' on':''}" data-act="tp" data-c="${esc(c.id)}" data-n="${esc(m)}" ${!on&&mine.length>=mx?'disabled':''} aria-pressed="${on}">${esc(m)}</button>`}).join('')}</div>`}
+  let h=`<div class="chips">${mine.map((n,i)=>`<span class="chip">${esc(n)}<button data-act="rmnom" data-c="${esc(c.id)}" data-i="${i}" aria-label="Quitar ${esc(n)}">×</button></span>`).join('')}</div>`;
+  if(mine.length>=mx)return h+`<p class="meta">Ya tienes tus ${mx} nominaciones.</p>`;
+  if(t==='contenido')return h+`<form class="add sm" data-form="nom" data-c="${esc(c.id)}"><input id="nom-${esc(c.id)}" maxlength="120" placeholder="Describe cuál es, p. ej. «El audio de Mora en la feria»" autocomplete="off" required><button class="btn">Añadir</button></form>`;
+  const k=csize(c),d=draft[c.id]||[];
+  return h+`<p class="meta">Elige ${k} personas para una nominación (${d.length}/${k})</p><div class="people">${ms.map(m=>{const on=d.includes(m);return `<button class="pp${on?' on':''}" data-act="dp" data-c="${esc(c.id)}" data-n="${esc(m)}" ${!on&&d.length>=k?'disabled':''} aria-pressed="${on}">${esc(m)}</button>`}).join('')}</div><button class="btn gold addg" data-act="addgroup" data-c="${esc(c.id)}" ${d.length===k?'':'disabled'}>Añadir nominación</button>`;
 }
 function v2(){
   if(cfg.phase<2&&!owner)return locked(2);
   const open=isOpen(2),b=myB(),mx=maxN();
-  let h=`<section><h2>Nominados</h2><p class="sub">${open?`Escribe hasta ${mx} nominados por categoría. Los ${mx} más repetidos pasan a la votación final.`:closedMsg(2)}</p>`;
+  let h=`<section><h2>Nominados</h2><p class="sub">${open?`Nomina hasta ${mx} por categoría, solo entre la gente del grupo. En las de mensajes o vídeos describe cuál es. Los ${mx} más repetidos pasan a la votación final.`:closedMsg(2)}</p>`;
   if(open&&!canWrite)h+=noWrite();
   if(!cfg.cats.length)return h+`<div class="empty">Aún no hay categorías elegidas.</div></section>`;
-  const sg=new Set();for(const x of Object.values(ballots))for(const a of Object.values(x.noms||{}))for(const n of a)sg.add(n);
-  h+=`<datalist id="sugg">${[...sg].map(n=>`<option value="${esc(n)}">`).join('')}</datalist><div class="cats">`;
+  h+=`<datalist id="members">${members().map(n=>`<option value="${esc(n)}">`).join('')}</datalist><div class="cats">`;
   for(const c of cfg.cats){
-    const mine=b.noms[c.id]||[],tl=nomTally(c.id),off=c.nominees||[];
-    h+=`<article class="cat"><h3>${esc(c.name)}</h3>`;
-    if(open&&canWrite){
-      h+=`<div class="chips">${mine.map((n,i)=>`<span class="chip">${esc(n)}<button data-act="rmnom" data-c="${esc(c.id)}" data-i="${i}" aria-label="Quitar ${esc(n)}">×</button></span>`).join('')}</div>`;
-      h+=mine.length<mx?`<form class="add sm" data-form="nom" data-c="${esc(c.id)}"><input id="nom-${esc(c.id)}" list="sugg" maxlength="40" placeholder="Nombre del nominado" autocomplete="off" required><button class="btn">Añadir</button></form>`:`<p class="meta">Ya tienes tus ${mx} nominados.</p>`;
-    }
-    if(tl.length){const top=tl[0].count;h+=`<span class="lbl">Recuento del grupo</span><ul class="tally">${tl.slice(0,8).map((t,i)=>{const isOff=off.some(o=>norm(o.name)===norm(t.name));return `<li class="${i<mx?'top':''}"><span>${esc(t.name)}${isOff?'<span class="badge">Nominado</span>':''}</span><div class="bar"><i style="width:${t.count/top*100}%"></i></div><b>${t.count}</b>${owner&&!isOff&&off.length<mx?`<button class="link gold-t" data-act="addnominee" data-c="${esc(c.id)}" data-n="${esc(t.name)}">Nominar</button>`:'<span></span>'}</li>`}).join('')}</ul>`}
+    const t=ctype(c),mine=b.noms[c.id]||[],tl=nomTally(c.id),off=c.nominees||[];
+    h+=`<article class="cat"><h3>${esc(c.name)}</h3><p class="ctag">${esc(t==='grupo'?`${csize(c)} personas por nominación`:TYPES[t])}</p>`;
+    if(open&&canWrite)h+=nomPicker(c,mine,mx,open);
+    if(tl.length){const top=tl[0].count;h+=`<span class="lbl">Recuento del grupo</span><ul class="tally">${tl.slice(0,10).map((x,i)=>{const isOff=off.some(o=>norm(o.name)===norm(x.name)),have=mine.some(n=>norm(n)===norm(x.name));let act='<span></span>';if(owner&&!isOff&&off.length<mx)act=`<button class="link gold-t" data-act="addnominee" data-c="${esc(c.id)}" data-n="${esc(x.name)}">Nominar</button>`;else if(t==='contenido'&&open&&canWrite&&!have&&mine.length<mx)act=`<button class="link gold-t" data-act="metoo" data-c="${esc(c.id)}" data-n="${esc(x.name)}">Yo también</button>`;return `<li class="${i<mx?'top':''}"><span>${esc(x.name)}${isOff?'<span class="badge">Nominado</span>':''}</span><div class="bar"><i style="width:${x.count/top*100}%"></i></div><b>${x.count}</b>${act}</li>`}).join('')}</ul>`}
     else h+='<p class="meta">Sin nominaciones todavía.</p>';
     if(off.length||owner)h+=nomineesBlock(c);
     h+='</article>';
@@ -214,8 +253,10 @@ function v3(){
   if(!cats.length)return h+`<div class="empty">Los nominados aún no están listos.</div></section>`;
   h+='<div class="cats wide">';
   for(const c of cats){
-    const pick=b.picks[c.id],t=pickTally(c.id),tot=Object.values(t).reduce((a,x)=>a+x,0);
-    h+=`<article class="cat"><h3>${esc(c.name)}</h3><div class="cards">`+c.nominees.map(n=>{const on=pick===n.id,win=c.revealed&&c.winner===n.id;return `<button class="card${on?' on':''}${win?' win':''}" data-act="pk" data-c="${esc(c.id)}" data-id="${esc(n.id)}" ${open&&canWrite?'':'disabled'} aria-pressed="${on}">${photo(n,'big')}<span class="nn">${esc(n.name)}</span>${on?'<span class="mine">Tu voto</span>':''}${owner||c.revealed?`<span class="cnt">${t[n.id]||0} votos</span>`:''}</button>`}).join('')+'</div>';
+    const pick=b.picks[c.id],t=pickTally(c.id),tot=Object.values(t).reduce((a,x)=>a+x,0),ct=ctype(c),dis=open&&canWrite?'':'disabled';
+    h+=`<article class="cat"><h3>${esc(c.name)}</h3><div class="cards${ct==='contenido'?' two':''}">`+c.nominees.map(n=>{const on=pick===n.id,win=c.revealed&&c.winner===n.id,cnt=owner||c.revealed?`<span class="cnt">${t[n.id]||0} votos</span>`:'';
+      if(ct==='contenido')return `<div class="card${on?' on':''}${win?' win':''}">${n.media?mediaHtml(n.media):'<div class="nomedia">Sin archivo todavía</div>'}<span class="nn">${esc(n.name)}</span>${cnt}<button class="btn${on?' gold':''} vbtn" data-act="pk" data-c="${esc(c.id)}" data-id="${esc(n.id)}" ${dis} aria-pressed="${on}">${on?'Tu voto':'Votar'}</button></div>`;
+      return `<button class="card${on?' on':''}${win?' win':''}" data-act="pk" data-c="${esc(c.id)}" data-id="${esc(n.id)}" ${dis} aria-pressed="${on}">${photo(n,'big')}<span class="nn">${esc(n.name)}</span>${on?'<span class="mine">Tu voto</span>':''}${cnt}</button>`}).join('')+'</div>';
     if(owner)h+=`<p class="meta">${tot} votos emitidos. El recuento solo aparece en tu vista de organizador hasta que lo reveles en la gala.</p>`;
     h+='</article>';
   }
@@ -229,7 +270,8 @@ function v4(){
   for(const c of cats){
     const t=pickTally(c.id),w=c.revealed&&c.nominees.find(n=>n.id===c.winner);
     h+=`<article class="cat env${w?' open':''}"><h3>${esc(c.name)}</h3>`;
-    h+=w?`<div class="winner">${photo(w,'huge')}<div><span class="lbl">Ganador</span><strong>${esc(w.name)}</strong><span class="meta">${t[w.id]||0} votos</span></div></div>`:'<div class="sealed">Sobre cerrado</div>';
+    if(w)h+=ctype(c)==='contenido'?`<div class="winc"><span class="lbl">Ganador</span>${w.media?mediaHtml(w.media):''}<strong class="wname">${esc(w.name)}</strong><span class="meta">${t[w.id]||0} votos</span></div>`:`<div class="winner">${photo(w,'huge')}<div><span class="lbl">Ganador</span><strong class="wname">${esc(w.name)}</strong><span class="meta">${t[w.id]||0} votos</span></div></div>`;
+    else h+='<div class="sealed">Sobre cerrado</div>';
     if(owner){const s=[...c.nominees].sort((a,b)=>(t[b.id]||0)-(t[a.id]||0));h+=`<span class="lbl">Recuento (solo tú)</span><ul class="tally">${s.map(n=>`<li><span>${esc(n.name)}</span><span></span><b>${t[n.id]||0}</b><button class="link gold-t" data-act="crown" data-c="${esc(c.id)}" data-id="${esc(n.id)}">${c.revealed&&c.winner===n.id?'Ocultar':'Coronar'}</button></li>`).join('')}</ul>`}
     h+='</article>';
   }
@@ -237,14 +279,20 @@ function v4(){
 }
 function vAdmin(){
   const loc=iso=>{if(!iso)return'';const d=new Date(iso),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`};
-  return `<section><h2>Panel del organizador</h2><p class="sub">Solo tú ves esto. Tú decides cuándo cambia la fase y qué temáticas salen. Las temáticas se eligen con «Elegir» en la pestaña Temáticas, los nominados con «Nominar» y los ganadores con «Coronar» en la Gala.</p>
+  return `<section><h2>Panel del organizador</h2><p class="sub">Solo tú ves esto. Las temáticas se eligen con «Elegir» en la pestaña Temáticas, los nominados con «Nominar» y los ganadores con «Coronar» en la Gala.</p>
   <form class="admin" data-form="cfg"><label>Fase activa<select id="a-phase">${PH.map(p=>`<option value="${p.n}" ${cfg.phase===p.n?'selected':''}>${p.t}</option>`).join('')}</select></label>
   ${PH.slice(0,3).map(p=>`<label>Cierre de «${p.t}»<input type="datetime-local" id="a-end${p.n}" value="${loc(cfg.ends&&cfg.ends[p.n])}"></label>`).join('')}
   <label>Nominados por categoría<input type="number" id="a-max" min="2" max="8" value="${maxN()}"></label>
   <button class="btn gold">Guardar cambios</button></form>
   <h3 class="h3">Categorías elegidas (${cfg.cats.length})</h3>
-  <ol class="adm-cats">${cfg.cats.map((c,i)=>`<li><div class="row"><span>${esc(c.name)}</span><span class="meta">${(c.nominees||[]).length} nominados</span><button class="link" data-act="up" data-i="${i}" ${i?'':'disabled'}>Subir</button><button class="link" data-act="rmcat" data-i="${i}">Quitar</button></div></li>`).join('')||'<li class="meta">Elige temáticas desde la pestaña Temáticas.</li>'}</ol>
+  <p class="meta">Elige el tipo de cada una: una persona, varias personas por nominación (como el tocayo del año) o contenido (mensajes, vídeos, fotos).</p>
+  <ol class="adm-cats">${cfg.cats.map((c,i)=>`<li><div class="row"><span>${esc(c.name)}</span><select class="tsel" data-act="ctype" data-i="${i}" aria-label="Tipo de categoría">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${ctype(c)===k?'selected':''}>${v}</option>`).join('')}</select>${ctype(c)==='grupo'?`<label class="szl">Personas<input class="sz" type="number" min="2" max="6" value="${csize(c)}" data-act="csize" data-i="${i}"></label>`:''}<span class="meta">${(c.nominees||[]).length} nominados</span><button class="link" data-act="up" data-i="${i}" ${i?'':'disabled'}>Subir</button><button class="link" data-act="rmcat" data-i="${i}">Quitar</button></div></li>`).join('')||'<li class="meta">Elige temáticas desde la pestaña Temáticas.</li>'}</ol>
   <form class="add sm" data-form="cat"><input id="a-newcat" maxlength="80" placeholder="Añadir una categoría a mano" autocomplete="off" required><button class="btn">Añadir</button></form>
+  <h3 class="h3">Miembros del grupo (${members().length})</h3>
+  <p class="meta">Solo se puede nominar a esta gente. Sepáralos por comas.</p>
+  <form class="admin" data-form="members" style="grid-template-columns:1fr"><textarea id="a-members" rows="3">${esc(members().join(', '))}</textarea><button class="btn gold">Guardar miembros</button></form>
+  <h3 class="h3">Vídeos y fotos de las nominaciones</h3>
+  <p class="meta">Sube el archivo a la carpeta <b>media</b> del repositorio picktakers-awards en GitHub (Add file › Upload files, hasta 25 MB) y escribe aquí su nombre exacto, por ejemplo <b>audio-mora.mp4</b>. También vale un enlace de YouTube o de cualquier web.</p>
   <p class="meta" style="margin-top:20px">Para que tus amigos voten, pásales el enlace de esta página: entran con su cuenta de Google.</p></section>`;
 }
 function vLogin(){return `<section class="login"><h2>Bienvenido a la gala</h2><p class="sub" style="margin:10px auto 0">Entra con tu cuenta de Google para proponer temáticas, nominar y votar. Tu nombre aparecerá junto a lo que propongas.</p><p class="meta" style="margin-top:10px">Si lo abriste desde WhatsApp o Instagram, ábrelo en Chrome o Safari: Google no deja iniciar sesión dentro de esas apps.</p><button class="btn gold" id="login">Entrar con Google</button></section>`}
@@ -270,7 +318,9 @@ function tick(){
   tick.done=0;const d=Math.floor(ms/864e5),h=Math.floor(ms/36e5)%24,m=Math.floor(ms/6e4)%60,s=Math.floor(ms/1e3)%60;
   el.textContent=`${PH[p-1].t}: quedan ${d?d+'d ':''}${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
 }
-function addNominee(c,name){saveCfg(x=>{const k=x.cats.find(k=>k.id===c);if(!k)return;k.nominees=k.nominees||[];if(k.nominees.length<(x.maxNoms||4)&&!k.nominees.some(n=>norm(n.name)===norm(name)))k.nominees.push({id:rid(),name,photo:null})})}
+function addNominee(cid,raw){const c=cfg.cats.find(k=>k.id===cid);if(!c)return;let name=String(raw).trim();const t=ctype(c);
+  if(t!=='contenido'){const p=parsePeople(name);if(!p||p.length!==csize(c)){toast(t==='grupo'?`Pon ${csize(c)} nombres del grupo separados por «y».`:'Ese nombre no está en la lista del grupo.');return}name=t==='grupo'?pairKey(p):p[0]}
+  saveCfg(x=>{const k=x.cats.find(k=>k.id===cid);if(!k)return;k.nominees=k.nominees||[];if(k.nominees.length<(x.maxNoms||4)&&!k.nominees.some(n=>norm(n.name)===norm(name)))k.nominees.push({id:rid(),name,photo:null,media:null})})}
 async function toData(f){const bm=await createImageBitmap(f),s=Math.min(1,560/Math.max(bm.width,bm.height)),cv=document.createElement('canvas');cv.width=Math.round(bm.width*s);cv.height=Math.round(bm.height*s);cv.getContext('2d').drawImage(bm,0,0,cv.width,cv.height);return cv.toDataURL('image/jpeg',.82)}
 
 $('#steps').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;tab=b.dataset.tab==='admin'?'admin':+b.dataset.tab;render()});
@@ -279,7 +329,7 @@ $('#view').addEventListener('click',e=>{
   const a=b.dataset.act,id=b.dataset.id,c=b.dataset.c;
   if(a==='vt')saveBallot(x=>{if(x.themes[id])delete x.themes[id];else x.themes[id]=true});
   else if(a==='delt'){const by=b.dataset.by;saveProps(by,(props[by]&&props[by].items||[]).filter(t=>t.id!==id))}
-  else if(a==='pick'){const t=allThemes().find(t=>t.id===id);saveCfg(x=>{const i=x.cats.findIndex(k=>k.id===id);if(i>=0)x.cats.splice(i,1);else if(t)x.cats.push({id,name:t.text,nominees:[],winner:null,revealed:false})})}
+  else if(a==='pick'){const t=allThemes().find(t=>t.id===id);saveCfg(x=>{const i=x.cats.findIndex(k=>k.id===id);if(i>=0)x.cats.splice(i,1);else if(t)x.cats.push({id,name:t.text,type:guessType(t.text),size:2,nominees:[],winner:null,revealed:false})})}
   else if(a==='rmnom')saveBallot(x=>{(x.noms[c]=x.noms[c]||[]).splice(+b.dataset.i,1)});
   else if(a==='addnominee')addNominee(c,b.dataset.n);
   else if(a==='rmnominee')saveCfg(x=>{const k=x.cats.find(k=>k.id===c);if(!k)return;k.nominees=k.nominees.filter(n=>n.id!==id);if(k.winner===id){k.winner=null;k.revealed=false}});
@@ -287,15 +337,22 @@ $('#view').addEventListener('click',e=>{
   else if(a==='crown')saveCfg(x=>{const k=x.cats.find(k=>k.id===c);if(!k)return;if(k.revealed&&k.winner===id)k.revealed=false;else{k.winner=id;k.revealed=true}});
   else if(a==='up')saveCfg(x=>{const i=+b.dataset.i;if(i>0)[x.cats[i-1],x.cats[i]]=[x.cats[i],x.cats[i-1]]});
   else if(a==='rmcat')saveCfg(x=>{x.cats.splice(+b.dataset.i,1)});
+  else if(a==='tp'){const n=b.dataset.n;saveBallot(x=>{const l=x.noms[c]=x.noms[c]||[];const i=l.indexOf(n);if(i>=0)l.splice(i,1);else if(l.length<maxN()&&members().includes(n))l.push(n)})}
+  else if(a==='dp'){const n=b.dataset.n,d=draft[c]=draft[c]||[];const i=d.indexOf(n);if(i>=0)d.splice(i,1);else{const k=cfg.cats.find(k=>k.id===c);if(k&&d.length<csize(k))d.push(n)}render()}
+  else if(a==='addgroup'){const k=cfg.cats.find(k=>k.id===c),d=draft[c]||[];if(!k||d.length!==csize(k))return;const key=pairKey(d);draft[c]=[];saveBallot(x=>{const l=x.noms[c]=x.noms[c]||[];if(l.length<maxN()&&!l.some(n=>norm(n)===norm(key)))l.push(key)})}
+  else if(a==='metoo'){const n=b.dataset.n;saveBallot(x=>{const l=x.noms[c]=x.noms[c]||[];if(l.length<maxN()&&!l.some(v=>norm(v)===norm(n)))l.push(n)})}
 });
 $('#view').addEventListener('submit',e=>{
   e.preventDefault();const f=e.target,k=f.dataset.form,c=f.dataset.c,inp=f.querySelector('input'),val=inp?inp.value.trim():'';
   if(k==='theme'){if(!val||!isOpen(1)||!me)return;inp.value='';saveProps(me,[...(props[me]&&props[me].items||[]),{id:rid(),text:val,at:Date.now()}])}
   else if(k==='nom'){if(!val)return;inp.value='';saveBallot(x=>{const a=x.noms[c]=x.noms[c]||[];if(a.length<maxN()&&!a.some(n=>norm(n)===norm(val)))a.push(val)})}
   else if(k==='nominee'){if(!val)return;inp.value='';addNominee(c,val)}
-  else if(k==='cat'){if(!val)return;inp.value='';saveCfg(x=>x.cats.push({id:rid(),name:val,nominees:[],winner:null,revealed:false}))}
+  else if(k==='cat'){if(!val)return;inp.value='';saveCfg(x=>x.cats.push({id:rid(),name:val,type:guessType(val),size:2,nominees:[],winner:null,revealed:false}))}
+  else if(k==='media'){if(!validMedia(val)){toast('Pon el nombre de un archivo (.mp4, .jpg…) o un enlace https.');return}const id=f.dataset.id;saveCfg(x=>{const q=x.cats.find(q=>q.id===c),n=q&&q.nominees.find(n=>n.id===id);if(n)n.media=val||null});toast('Guardado')}
+  else if(k==='members'){const l=[...new Set($('#a-members').value.split(/[,\n]/).map(x=>x.trim()).filter(Boolean))].slice(0,80);if(l.length<2){toast('Pon al menos dos nombres.');return}saveCfg(x=>{x.members=l});toast('Miembros guardados')}
   else if(k==='cfg'){const ends={};for(const p of [1,2,3]){const v=$('#a-end'+p).value;ends[p]=v?new Date(v).toISOString():null}const ph=+$('#a-phase').value,mx=Math.max(2,Math.min(8,+$('#a-max').value||4));saveCfg(x=>{x.phase=ph;x.ends=ends;x.maxNoms=mx});toast('Cambios guardados')}
 });
+$('#view').addEventListener('change',e=>{const el=e.target,a=el.dataset.act;if(a!=='ctype'&&a!=='csize')return;const i=+el.dataset.i;saveCfg(x=>{const k=x.cats[i];if(!k)return;if(a==='ctype'){k.type=el.value;if(el.value==='grupo'&&!k.size)k.size=2}else k.size=Math.max(2,Math.min(6,+el.value||2))})});
 $('#view').addEventListener('change',async e=>{
   const i=e.target;if(i.dataset.act!=='photo'||!i.files||!i.files[0]||!owner)return;
   toast('Subiendo foto…');
