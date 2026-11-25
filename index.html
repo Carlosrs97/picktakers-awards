@@ -95,7 +95,14 @@ input::placeholder{color:#8f6f78}
 .people{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .pp{font:inherit;font-size:14px;min-height:40px;padding:0 13px;border-radius:99px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer}
 .pp.on{background:var(--gold);color:#2a1206;border-color:var(--gold);font-weight:600}.pp:disabled{opacity:.4;cursor:default}
-.addg{margin-top:10px}.ctag{font-size:13px;color:var(--mute);margin:-6px 0 10px}
+.addg{margin-top:10px}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,130px),1fr));gap:8px;margin:4px 0 12px}
+.slot{position:relative;border:1px dashed var(--line);border-radius:12px;padding:8px 10px;min-height:62px;display:flex;flex-direction:column;justify-content:center}
+.slot .sn{font-size:12px;color:var(--mute)}.slot b{font-weight:600;font-size:15px;line-height:1.25;padding-right:22px}.slot:not(.full) b{color:var(--mute);font-weight:500}
+.slot.full{border:1px solid var(--gold2);background:linear-gradient(160deg,#3b2312,var(--panel2))}
+.slot.cur{border:2px solid var(--gold)}.slot.cur b{color:var(--ink)}
+.sx{position:absolute;top:4px;right:4px;width:32px;height:32px;border-radius:50%;border:0;background:none;color:var(--mute);font-size:20px;cursor:pointer}
+.manual{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:8px 12px}.manual summary{cursor:pointer;color:var(--gold);font-weight:600;min-height:32px;display:flex;align-items:center}.ctag{font-size:13px;color:var(--mute);margin:-6px 0 10px}
 .cards.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 div.card{cursor:default}.card .mm,.mwrap .mm,.winc .mm{width:100%;max-height:340px;border-radius:10px;background:#000;object-fit:contain;display:block}
 .vid{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000}.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -165,7 +172,7 @@ function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show')
 function note(t){$('#note').innerHTML=t?`<div>${esc(t)}</div>`:''}
 function allThemes(){const o=[];for(const [uid,d] of Object.entries(props))for(const it of (d.items||[]))o.push({...it,by:uid});return o}
 function themeVotes(tid){let c=0;for(const b of Object.values(ballots))if(b.themes&&b.themes[tid])c++;return c}
-function nomTally(cid){const m={};for(const b of Object.values(ballots))for(const n of (b.noms&&b.noms[cid]||[])){const k=norm(n);if(!k)continue;(m[k]||(m[k]={name:n,count:0})).count++}return Object.values(m).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name))}
+function nomTally(cid){const m={};for(const b of Object.values(ballots))for(const raw of (b.noms&&b.noms[cid]||[])){const pp=parsePeople(raw),n=pp&&pp.length>1?pairKey(pp):raw,k=norm(n);if(!k)continue;(m[k]||(m[k]={name:n,count:0})).count++}return Object.values(m).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name))}
 function pickTally(cid){const m={};for(const b of Object.values(ballots)){const p=b.picks&&b.picks[cid];if(p)m[p]=(m[p]||0)+1}return m}
 const myB=()=>{const b=JSON.parse(JSON.stringify(ballots[me]||{}));b.themes=b.themes||{};b.noms=b.noms||{};b.picks=b.picks||{};return b};
 function errText(e){const c=e&&e.code;if(c==='permission-denied')return'No tienes permiso para hacer eso.';if(c==='resource-exhausted')return'Se ha superado el límite gratuito de hoy.';return'No se pudo guardar. Inténtalo otra vez.'}
@@ -195,7 +202,7 @@ const members=()=>(cfg.members&&cfg.members.length?cfg.members:DEF_MEMBERS);
 const ctype=c=>c.type||'persona';
 const csize=c=>ctype(c)==='grupo'?Math.max(2,Math.min(6,c.size||2)):1;
 const TYPES={persona:'Una persona',grupo:'Varias personas por nominación',contenido:'Mensaje, vídeo o foto'};
-const draft={};
+const draft={},adraft={},manOpen=new Set();
 function guessType(t){const n=norm(t);if(/mensaje|video|foto|audio|meme|story|historia|momento|frase|tiktok|chat|sticker|cancion/.test(n))return'contenido';if(/tocay|pareja|duo|trio/.test(n))return'grupo';return'persona'}
 function pairKey(arr){const ms=members();return [...arr].sort((a,b)=>ms.indexOf(a)-ms.indexOf(b)).join(' y ')}
 function parsePeople(str){const ms=members(),out=[];const parts=String(str).split(/\s*(?:,|\+|\/|&|\sy\s)\s*/).map(x=>x.trim()).filter(Boolean);for(const p of parts){const m=ms.find(x=>norm(x)===norm(p));if(!m)return null;if(!out.includes(m))out.push(m)}return out}
@@ -215,17 +222,28 @@ function nomineesBlock(c){
   const off=c.nominees||[],t=ctype(c);
   let h=`<span class="lbl">Nominados oficiales · ${off.length}/${maxN()}</span>`;
   if(off.length)h+='<div class="noms">'+off.map(n=>`<div class="nom">${t==='contenido'?'':photo(n,'ph')}<span class="nn">${esc(n.name)}</span>${owner?`${t!=='contenido'?`<label class="link">Foto<input type="file" accept="image/*" hidden data-act="photo" data-c="${esc(c.id)}" data-id="${esc(n.id)}"></label>`:''}<button class="link" data-act="rmnominee" data-c="${esc(c.id)}" data-id="${esc(n.id)}">Quitar</button>`:''}${t==='contenido'&&n.media?`<div class="mwrap">${mediaHtml(n.media)}</div>`:''}${owner&&t==='contenido'?`<form class="add sm full" data-form="media" data-c="${esc(c.id)}" data-id="${esc(n.id)}"><input id="media-${esc(n.id)}" maxlength="300" placeholder="Archivo de la carpeta media o enlace" value="${esc(n.media||'')}" autocomplete="off"><button class="btn">Guardar</button></form>`:''}</div>`).join('')+'</div>';
-  if(owner&&off.length<maxN())h+=`<form class="add sm" data-form="nominee" data-c="${esc(c.id)}"><input id="nominee-${esc(c.id)}" ${t==='persona'?'list="members"':''} maxlength="120" placeholder="${t==='persona'?'Nominar a mano (nombre)':t==='grupo'?`Nominar a mano: ${csize(c)} nombres separados por «y»`:'Nominar a mano (descripción)'}" autocomplete="off" required><button class="btn">Nominar</button></form>`;
+  if(owner&&off.length<maxN()){
+    if(t==='contenido')h+=`<form class="add sm" data-form="nominee" data-c="${esc(c.id)}"><input id="nominee-${esc(c.id)}" maxlength="120" placeholder="Nominar a mano (descripción)" autocomplete="off" required><button class="btn">Nominar</button></form>`;
+    else{const taken=new Set(off.map(n=>n.name)),ad=adraft[c.id]||[],ms=members().filter(m=>t==='grupo'||!taken.has(m));
+      h+=`<details class="manual" data-c="${esc(c.id)}" ${manOpen.has(c.id)?'open':''}><summary>Nominar a mano</summary>${t==='grupo'?`<p class="meta">${ad.length?esc(ad.join(' + '))+' + …':`Toca ${csize(c)} personas`}</p>`:'<p class="meta">Toca un nombre para nominarlo.</p>'}<div class="people">${ms.map(m=>`<button class="pp${ad.includes(m)?' on':''}" data-act="an" data-c="${esc(c.id)}" data-n="${esc(m)}">${esc(m)}</button>`).join('')}</div></details>`}
+  }
   return h;
+}
+function slotsHtml(c,mine,mx,cur){
+  let h='<div class="slots">';
+  for(let i=0;i<mx;i++){const v=mine[i];
+    if(v)h+=`<div class="slot full"><span class="sn">Nominación ${i+1}</span><b>${esc(v.replace(/ y /g,' + '))}</b><button class="sx" data-act="rmnom" data-c="${esc(c.id)}" data-i="${i}" aria-label="Quitar ${esc(v)}">×</button></div>`;
+    else if(i===mine.length)h+=`<div class="slot cur"><span class="sn">Nominación ${i+1}</span><b>${esc(cur)}</b></div>`;
+    else h+=`<div class="slot"><span class="sn">Nominación ${i+1}</span><b>Vacía</b></div>`}
+  return h+'</div>';
 }
 function nomPicker(c,mine,mx,open){
   const t=ctype(c),ms=members();
-  if(t==='persona'){const sel=new Set(mine);return `<p class="meta">Toca hasta ${mx} personas (${mine.length}/${mx})</p><div class="people">${ms.map(m=>{const on=sel.has(m);return `<button class="pp${on?' on':''}" data-act="tp" data-c="${esc(c.id)}" data-n="${esc(m)}" ${!on&&mine.length>=mx?'disabled':''} aria-pressed="${on}">${esc(m)}</button>`}).join('')}</div>`}
-  let h=`<div class="chips">${mine.map((n,i)=>`<span class="chip">${esc(n)}<button data-act="rmnom" data-c="${esc(c.id)}" data-i="${i}" aria-label="Quitar ${esc(n)}">×</button></span>`).join('')}</div>`;
-  if(mine.length>=mx)return h+`<p class="meta">Ya tienes tus ${mx} nominaciones.</p>`;
-  if(t==='contenido')return h+`<form class="add sm" data-form="nom" data-c="${esc(c.id)}"><input id="nom-${esc(c.id)}" maxlength="120" placeholder="Describe cuál es, p. ej. «El audio de Mora en la feria»" autocomplete="off" required><button class="btn">Añadir</button></form>`;
-  const k=csize(c),d=draft[c.id]||[];
-  return h+`<p class="meta">Elige ${k} personas para una nominación (${d.length}/${k})</p><div class="people">${ms.map(m=>{const on=d.includes(m);return `<button class="pp${on?' on':''}" data-act="dp" data-c="${esc(c.id)}" data-n="${esc(m)}" ${!on&&d.length>=k?'disabled':''} aria-pressed="${on}">${esc(m)}</button>`}).join('')}</div><button class="btn gold addg" data-act="addgroup" data-c="${esc(c.id)}" ${d.length===k?'':'disabled'}>Añadir nominación</button>`;
+  if(t==='contenido')return slotsHtml(c,mine,mx,'Escríbela abajo')+(mine.length<mx?`<form class="add sm" data-form="nom" data-c="${esc(c.id)}"><input id="nom-${esc(c.id)}" maxlength="120" placeholder="Describe cuál es, p. ej. «El audio de Mora en la feria»" autocomplete="off" required><button class="btn">Añadir</button></form>`:'');
+  if(t==='persona'){const sel=new Set(mine);return slotsHtml(c,mine,mx,'Toca un nombre')+`<div class="people">${ms.map(m=>{const on=sel.has(m);return `<button class="pp${on?' on':''}" data-act="tp" data-c="${esc(c.id)}" data-n="${esc(m)}" ${!on&&mine.length>=mx?'disabled':''} aria-pressed="${on}">${esc(m)}</button>`}).join('')}</div>`}
+  const k=csize(c),d=draft[c.id]||[],full=mine.length>=mx;
+  const cur=d.length?d.join(' + ')+(d.length<k?' + …':''):`Elige ${k} personas`;
+  return slotsHtml(c,mine,mx,cur)+(full?'':`<p class="meta">Toca ${k} nombres para rellenar la nominación ${mine.length+1}. Al completarla pasa sola a la siguiente.</p><div class="people">${ms.map(m=>{const on=d.includes(m);return `<button class="pp${on?' on':''}" data-act="dp" data-c="${esc(c.id)}" data-n="${esc(m)}" aria-pressed="${on}">${esc(m)}</button>`}).join('')}</div>`);
 }
 function v2(){
   if(cfg.phase<2&&!owner)return locked(2);
@@ -338,7 +356,9 @@ $('#view').addEventListener('click',e=>{
   else if(a==='up')saveCfg(x=>{const i=+b.dataset.i;if(i>0)[x.cats[i-1],x.cats[i]]=[x.cats[i],x.cats[i-1]]});
   else if(a==='rmcat')saveCfg(x=>{x.cats.splice(+b.dataset.i,1)});
   else if(a==='tp'){const n=b.dataset.n;saveBallot(x=>{const l=x.noms[c]=x.noms[c]||[];const i=l.indexOf(n);if(i>=0)l.splice(i,1);else if(l.length<maxN()&&members().includes(n))l.push(n)})}
-  else if(a==='dp'){const n=b.dataset.n,d=draft[c]=draft[c]||[];const i=d.indexOf(n);if(i>=0)d.splice(i,1);else{const k=cfg.cats.find(k=>k.id===c);if(k&&d.length<csize(k))d.push(n)}render()}
+  else if(a==='dp'){const n=b.dataset.n,d=draft[c]=draft[c]||[],k=cfg.cats.find(k=>k.id===c);if(!k)return;const i=d.indexOf(n);if(i>=0)d.splice(i,1);else if(d.length<csize(k))d.push(n);
+    if(d.length===csize(k)){const key=pairKey(d);draft[c]=[];const mine=(myB().noms[c]||[]);if(mine.some(v=>norm(v)===norm(key))){toast('Esa nominación ya la tienes.');render();return}saveBallot(x=>{const l=x.noms[c]=x.noms[c]||[];if(l.length<maxN())l.push(key)})}else render()}
+  else if(a==='an'){const n=b.dataset.n,k=cfg.cats.find(k=>k.id===c);if(!k)return;manOpen.add(c);if(ctype(k)==='persona'){addNominee(c,n);return}const d=adraft[c]=adraft[c]||[];const i=d.indexOf(n);if(i>=0)d.splice(i,1);else if(d.length<csize(k))d.push(n);if(d.length===csize(k)){adraft[c]=[];addNominee(c,d.join(' y '))}else render()}
   else if(a==='addgroup'){const k=cfg.cats.find(k=>k.id===c),d=draft[c]||[];if(!k||d.length!==csize(k))return;const key=pairKey(d);draft[c]=[];saveBallot(x=>{const l=x.noms[c]=x.noms[c]||[];if(l.length<maxN()&&!l.some(n=>norm(n)===norm(key)))l.push(key)})}
   else if(a==='metoo'){const n=b.dataset.n;saveBallot(x=>{const l=x.noms[c]=x.noms[c]||[];if(l.length<maxN()&&!l.some(v=>norm(v)===norm(n)))l.push(n)})}
 });
@@ -352,6 +372,7 @@ $('#view').addEventListener('submit',e=>{
   else if(k==='members'){const l=[...new Set($('#a-members').value.split(/[,\n]/).map(x=>x.trim()).filter(Boolean))].slice(0,80);if(l.length<2){toast('Pon al menos dos nombres.');return}saveCfg(x=>{x.members=l});toast('Miembros guardados')}
   else if(k==='cfg'){const ends={};for(const p of [1,2,3]){const v=$('#a-end'+p).value;ends[p]=v?new Date(v).toISOString():null}const ph=+$('#a-phase').value,mx=Math.max(2,Math.min(8,+$('#a-max').value||4));saveCfg(x=>{x.phase=ph;x.ends=ends;x.maxNoms=mx});toast('Cambios guardados')}
 });
+$('#view').addEventListener('toggle',e=>{const d=e.target;if(d.classList&&d.classList.contains('manual')){if(d.open)manOpen.add(d.dataset.c);else manOpen.delete(d.dataset.c)}},true);
 $('#view').addEventListener('change',e=>{const el=e.target,a=el.dataset.act;if(a!=='ctype'&&a!=='csize')return;const i=+el.dataset.i;saveCfg(x=>{const k=x.cats[i];if(!k)return;if(a==='ctype'){k.type=el.value;if(el.value==='grupo'&&!k.size)k.size=2}else k.size=Math.max(2,Math.min(6,+el.value||2))})});
 $('#view').addEventListener('change',async e=>{
   const i=e.target;if(i.dataset.act!=='photo'||!i.files||!i.files[0]||!owner)return;
