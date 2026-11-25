@@ -96,6 +96,10 @@ input::placeholder{color:#8f6f78}
 .pp{font:inherit;font-size:14px;min-height:40px;padding:0 13px;border-radius:99px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer}
 .pp.on{background:var(--gold);color:#2a1206;border-color:var(--gold);font-weight:600}.pp:disabled{opacity:.4;cursor:default}
 .addg{margin-top:10px}
+.rule{margin:14px 0 0;background:#3a2410;border:1px solid var(--gold2);border-radius:12px;padding:12px 14px;max-width:68ch}.rule strong{color:var(--gold)}
+.pos{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;background:var(--panel2);color:var(--mute);font-variant-numeric:tabular-nums}.pos.in{background:var(--gold);color:#2a1206}
+.theme.out{opacity:.72}
+.cutline{list-style:none;text-align:center;font-size:13px;font-weight:600;color:var(--gold);padding:10px 0;border-top:2px dashed var(--gold2);margin-top:6px}
 .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,130px),1fr));gap:8px;margin:4px 0 12px}
 .slot{position:relative;border:1px dashed var(--line);border-radius:12px;padding:8px 10px;min-height:62px;display:flex;flex-direction:column;justify-content:center}
 .slot .sn{font-size:12px;color:var(--mute)}.slot b{font-weight:600;font-size:15px;line-height:1.25;padding-right:22px}.slot:not(.full) b{color:var(--mute);font-weight:500}
@@ -189,13 +193,14 @@ function v1(){
   const open=isOpen(1),mine=myB().themes,chosen=new Set(cfg.cats.map(c=>c.id));
   const th=allThemes().map(t=>({...t,votes:themeVotes(t.id)})).sort((a,b)=>b.votes-a.votes||a.at-b.at);
   const voters=Object.values(ballots).filter(b=>b.themes&&Object.keys(b.themes).length).length;
-  let h=`<section><h2>Temáticas</h2><p class="sub">${open?'Propón categorías para los premios y vota todas las que quieras que salgan. La lista final la cierra el organizador siguiendo a la mayoría.':closedMsg(1)}</p>`;
+  const TOP=cfg.topThemes||15;
+  let h=`<section><h2>Temáticas</h2><p class="sub">${open?'Propón categorías para los premios y vota todas las que quieras que salgan.':closedMsg(1)}</p><div class="rule"><strong>Las ${TOP} temáticas más votadas serán las categorías de los premios.</strong> Si hay empate en el último puesto, decide el organizador.</div>`;
   if(open&&canWrite)h+=`<form class="add" data-form="theme"><input id="newTheme" maxlength="80" placeholder="Ej.: El que siempre llega tarde" autocomplete="off" required><button class="btn gold">Proponer</button></form>`;
   else if(open)h+=noWrite();
   h+=`<p class="meta">${th.length} propuestas · ${voters} ${voters===1?'persona ha':'personas han'} votado · ${cfg.cats.length} elegidas</p>`;
   if(!th.length)return h+`<div class="empty">Todavía no hay temáticas. ¡Estrena tú la lista!</div></section>`;
   const mx=Math.max(1,...th.map(t=>t.votes));
-  return h+'<ol class="themes">'+th.map(t=>{const on=!!mine[t.id],ch=chosen.has(t.id);return `<li class="theme${ch?' chosen':''}"><div class="tbody"><div class="ttext">${esc(t.text)}${ch?'<span class="badge">Elegida</span>':''}</div><div class="tby">Propuesta por ${esc(nameOf(t.by))}</div><div class="bar"><i style="width:${t.votes/mx*100}%"></i></div></div><div class="tact">${owner?`<button class="link gold-t" data-act="pick" data-id="${esc(t.id)}">${ch?'Descartar':'Elegir'}</button>`:''}${(t.by===me&&open)||owner?`<button class="link" data-act="delt" data-id="${esc(t.id)}" data-by="${esc(t.by)}">Quitar</button>`:''}<button class="vote${on?' on':''}" data-act="vt" data-id="${esc(t.id)}" ${open&&canWrite?'':'disabled'} aria-pressed="${on}"><b>${t.votes}</b><span>${on?'Votada':'Votar'}</span></button></div></li>`}).join('')+'</ol></section>';
+  return h+'<ol class="themes">'+th.map((t,i)=>{const on=!!mine[t.id],ch=chosen.has(t.id),top=i<TOP;return `${i===TOP?`<li class="cutline">Hasta aquí entran en los premios · desde aquí se quedan fuera</li>`:''}<li class="theme${ch?' chosen':''}${top?'':' out'}"><span class="pos${top?' in':''}">${i+1}</span><div class="tbody"><div class="ttext">${esc(t.text)}${ch?'<span class="badge">Elegida</span>':''}</div><div class="tby">Propuesta por ${esc(nameOf(t.by))}</div><div class="bar"><i style="width:${t.votes/mx*100}%"></i></div></div><div class="tact">${owner?`<button class="link gold-t" data-act="pick" data-id="${esc(t.id)}">${ch?'Descartar':'Elegir'}</button>`:''}${(t.by===me&&open)||owner?`<button class="link" data-act="delt" data-id="${esc(t.id)}" data-by="${esc(t.by)}">Quitar</button>`:''}<button class="vote${on?' on':''}" data-act="vt" data-id="${esc(t.id)}" ${open&&canWrite?'':'disabled'} aria-pressed="${on}"><b>${t.votes}</b><span>${on?'Votada':'Votar'}</span></button></div></li>`}).join('')+'</ol></section>';
 }
 const DEF_MEMBERS=['Tupac','Serpi','Javipro','Ichi','David','Escacena','Alex','Romero','Mora','Mario','Rafaelo','Camino','Coque','Dani','Rey','Hugo','Javisaurus','Jesuli','Julicg','Sanchet','Mi','Nacho','Mili'];
 const members=()=>(cfg.members&&cfg.members.length?cfg.members:DEF_MEMBERS);
